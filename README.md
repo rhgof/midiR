@@ -16,13 +16,9 @@ From this….
 
 ![](man/figures/Latest-Stripes-GBR-sst-month.png)
 
-to a monthly and annual view
-
-![](man/figures/README-GBR-Cover.png)
-
 .. to treating this as the score to this…
 
-[Fugral
+[Fugal
 Anomaly](https://soundcloud.com/citizen-science-2799538/fugal-anomaly/s-W6qa4os0N06?si=b0401cd5bf81421086ed8eb8c87f623d&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing)
 
 ## Installation
