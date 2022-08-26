@@ -7,7 +7,7 @@
 #' Return bytes from a notes data frame constructing the track header, notes, end of track messages
 #' @export bytesMidiTrack
 
-bytesMidiTrack <- function(notesDF, trackname="Test Track", instrument = "Instrument") {
+bytesMidiTrack <- function(notesDF, trackname, instrument ) {
 
   midiNotesDF <- toDeltaTime(notesDF)
   trkNotes <- bytesMidiNotes(midiNotesDF)
@@ -80,6 +80,4 @@ bytesMidiNotes <- function(midiNotesDF) {
   }
   return(bytes)
 }
-
-
 
