@@ -16,7 +16,7 @@ bytesMidiTrack <- function(notesDF, trackname, instrument ) {
   trkAll <- c(
     midiTrkSetup(trackname, instrument),
     trkNotes,
-    c(as.raw(0x81),as.raw(0x99),as.raw(0x60)),  # I do not know what this does
+#    c(as.raw(0x81),as.raw(0x99),as.raw(0x60)),  # I do not know what this does
     midiTrkEnd()
   )
 

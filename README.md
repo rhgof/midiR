@@ -12,14 +12,27 @@ data frames. The aim is allow the sonification of interesting data sets.
 For example, turning the sound of global temperature anomaly data into
 music.
 
-From this….
+From treat this as a score to be played ….
 
 ![](man/figures/Latest-Stripes-GBR-sst-month.png)
 
-.. to treating this as the score to this…
+… resulting in the notes to generate this …
+
+<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/tracks/1332712327&amp;color=%234c9784&amp;auto_play=false&amp;hide_related=false&amp;show_comments=true&amp;show_user=true&amp;show_reposts=false&amp;show_teaser=true">
+</iframe>
+
+<div
+style="font-size: 10px; color: #cccccc;line-break: anywhere;word-break: normal;overflow: hidden;white-space: nowrap;text-overflow: ellipsis; font-family: Interstate,Lucida Grande,Lucida Sans Unicode,Lucida Sans,Garuda,Verdana,Tahoma,sans-serif;font-weight: 100;">
+
+<a href="https://soundcloud.com/citizen-science-2799538" title="Citizen Science" target="_blank" style="color: #cccccc; text-decoration: none;">Citizen
+Science</a> ·
+<a href="https://soundcloud.com/citizen-science-2799538/reef-anomaly" title="Sea Surface Anomaly" target="_blank" style="color: #cccccc; text-decoration: none;">Sea
+Surface Anomaly</a>
+
+</div>
 
 [Fugal
-Anomaly](https://soundcloud.com/citizen-science-2799538/fugal-anomaly/s-W6qa4os0N06?si=b0401cd5bf81421086ed8eb8c87f623d&utm_source=clipboard&utm_medium=text&utm_campaign=social_sharing)
+Anomaly](https://soundcloud.com/citizen-science-2799538/reef-anomaly)
 
 ## Installation
 
