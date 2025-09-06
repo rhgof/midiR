@@ -1,3 +1,4 @@
+library(testthat)
 
 test_that("midi var length encoding", {
 # Midi Spec ...
@@ -42,7 +43,7 @@ test_that("short integer encoding", {
   expect_equal( bytesShort(15),   as.raw(c(0x00,0x0f)) )
   expect_equal( bytesShort(4095),   as.raw(c(0x0F,0xFF)) )
   expect_equal( bytesShort(65535),   as.raw(c(0xFF,0xFF)) )
-  expect_equal( bytesShort(65536),   as.raw(c(0x00,0x00)) )  # should throw error
+  expect_error( bytesShort(65536) )  # should throw error
 })
 
 test_that("long integer unsigned encoding", {
@@ -55,9 +56,12 @@ test_that("long integer unsigned encoding", {
   expect_equal( bytesInt(524287),   as.raw(c(0x00,0x07,0xFF,0xFF)) )
   expect_equal( bytesInt(2147483647),   as.raw(c(0x7F,0xFF,0xFF,0xFF)) )
   expect_equal( bytesInt(0x7FFFFFFF),   as.raw(c(0x7F,0xFF,0xFF,0xFF)) )
-#  expect_warning( bytesInt(0xFFFFFFFF),class = "simpleWarning" )
+  #expect_warning( bytesInt(0xFFFFFFFF),class = "simpleWarning" )
 
 })
+
+#------- Bytes Short
+
 
 test_that("bytes to characters", {
   #Int to four byte encoded
@@ -68,5 +72,50 @@ test_that("bytes to characters", {
   expect_equal( bytesChar("Test"),   as.raw(c(0x54,0x65,0x73,0x74)) )
 
 })
+
+
+#------- chatGPT Generated
+
+test_that("bytesShort returns a vector of raw bytes for a given 16-bit unsigned integer input", {
+  # Test data: A known 16-bit unsigned integer
+  input_int <- 300
+  expected_output <- as.raw(c(0x01, 0x2c)) # Little-endian representation of 300
+
+  # Test code
+  output <- bytesShort(input_int)
+
+  # Assertion
+  expect_equal(output, expected_output)
+})
+
+
+test_that("bytesShort returns correct byte representation for 16-bit integers with all 1s or 0s", {
+  # Test data: 16-bit unsigned integers with all 1s or 0s
+  input_int1 <- 65535 # All 1s
+  input_int2 <- 0     # All 0s
+  expected_output1 <- as.raw(c(0xff, 0xff))
+  expected_output2 <- as.raw(c(0x00, 0x00))
+
+  # Test code
+  output1 <- bytesShort(input_int1)
+  output2 <- bytesShort(input_int2)
+
+  # Assertion
+  expect_equal(output1, expected_output1)
+  expect_equal(output2, expected_output2)
+})
+
+test_that("bytesShort raises an error for non-numeric or non-integer inputs", {
+  # Test data: A non-numeric input
+  input_obj1 <- list("hello")
+  # Test data: A non-integer input
+  input_obj2 <- 1.5
+  expected_error <- "argument 'i' must be an integer"
+
+  # Test code and assertion
+  expect_error(bytesShort(input_obj1))
+  expect_error(bytesShort(input_obj2))
+})
+
 
 
