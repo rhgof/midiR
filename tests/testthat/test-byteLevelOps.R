@@ -108,13 +108,16 @@ test_that("bytesShort returns correct byte representation for 16-bit integers wi
 test_that("bytesShort raises an error for non-numeric or non-integer inputs", {
   # Test data: A non-numeric input
   input_obj1 <- list("hello")
+
+  expected_error <- "argument 'i' must be numeric"
+  expect_error(bytesShort(input_obj1))
+
   # Test data: A non-integer input
   input_obj2 <- 1.5
-  expected_error <- "argument 'i' must be an integer"
 
-  # Test code and assertion
-  expect_error(bytesShort(input_obj1))
+  expected_error <- "argument 'i' must be integer"
   expect_error(bytesShort(input_obj2))
+
 })
 
 

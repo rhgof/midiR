@@ -70,13 +70,15 @@ bytesInt <- function(i) {
 
 # 2byte 16-bit unsigned integers
 bytesShort <- function(i) {
-  if (!is.double(i) && !is.integer(i)) { # still not right
-#  if (!is.numeric(i)) {
-    stop("argument 'i' must be numeric")
-#  } else if ( !is.integer(i)) {
-#    stop("argument 'i' must be integer")
+  tol = .Machine$double.eps^0.5
+
+#  if (!is.double(i) && !is.integer(i)) { # still not right
+  if (!is.numeric(i)) {
+      stop("argument 'i' must be numeric")
+  } else if (!(abs(i - round(i)) < tol) ) {
+      stop("argument 'i' must be integer")
   } else if ( i < 0 || i > 65535) {
-    stop("argument 'i' must be a 16-bit unsigned integer")
+      stop("argument 'i' must be a 16-bit unsigned integer")
   }
 
   bytes = raw(2)
