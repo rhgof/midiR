@@ -50,3 +50,6 @@ vignettes/*.pdf
 /Docs/
 /work/
 /scripts/
+.vscode/extensions.json
+.vscode/launch.json
+.vscode/tasks.json
