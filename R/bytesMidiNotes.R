@@ -9,6 +9,7 @@
 
 bytesMidiTrack <- function(notesDF, trackname, instrument ) {
 
+  validateNotesDF(notesDF)
   midiNotesDF <- toDeltaTime(notesDF)
   trkNotes <- bytesMidiNotes(midiNotesDF)
 

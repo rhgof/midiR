@@ -11,6 +11,7 @@
 
 writeMidiFile <- function(midiFileName, notesMidiDF, trackname="Track", instrument = "Instrument") {
 
+  validateNotesDF(notesMidiDF)
   # encode track  as byte stream
   midibytes <- bytesMidiTrack(notesMidiDF,trackname,instrument)
   midiExt = ".mid"
