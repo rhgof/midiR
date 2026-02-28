@@ -48,12 +48,13 @@ midiTrkHeader <- function(trackLength=100) {
   bytes = raw(0)
   bytes = c(bytes, bytesChar(MTRK))
   bytes = c(bytes, bytesInt(trackLength))
-  bytes = c(bytes,as.raw(0x00))
+  return(bytes)
 }
 
 midiTrkSetup <- function(trackname="Test Track", instrument = "Instrument") {
+  # Delta time before first event
+  bytes = as.raw(0x00)
   # Channel
-  bytes = raw(0)
   bytes = c(bytes, bytesChannel())
 
   # Track Name Name
@@ -77,7 +78,7 @@ midiTrkSetup <- function(trackname="Test Track", instrument = "Instrument") {
 
 # Track End ------
 midiTrkEnd <- function() {
-  bytes = c(META_ESC,as.raw(0x2f),as.raw(0x00))
+  bytes = c(as.raw(0x00),META_ESC,as.raw(0x2f),as.raw(0x00))
   return(bytes)
 }
 
