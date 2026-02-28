@@ -47,9 +47,10 @@ vignettes/*.pdf
 *.mid
 
 # Other files
-/Docs/
-/work/
-/scripts/
+
 .vscode/extensions.json
 .vscode/launch.json
 .vscode/tasks.json
+
+/.quarto/
+**/*.quarto_ipynb
