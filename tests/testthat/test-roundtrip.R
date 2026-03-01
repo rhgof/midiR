@@ -4,12 +4,32 @@ library(tuneR)
 # Helper: write a notes DF to MIDI and read it back via tuneR::getMidiNotes
 roundtrip_notes <- function(input_df,
                             trackname = "Test",
-                            instrument = "Piano") {
+                            instrument = "Piano",
+                            channel = 1, bpm = 120,
+                            time_sig = c(4, 4), key_sig = c(0, FALSE),
+                            time_division = 480, smpte = NULL) {
   tmpfile <- tempfile(fileext = ".mid")
   on.exit(unlink(tmpfile))
-  writeMidiFile(tmpfile, input_df, trackname = trackname, instrument = instrument)
+  writeMidiFile(tmpfile, input_df, trackname = trackname, instrument = instrument,
+                channel = channel, bpm = bpm, time_sig = time_sig,
+                key_sig = key_sig, time_division = time_division, smpte = smpte)
   midi <- readMidi(tmpfile)
   getMidiNotes(midi)
+}
+
+# Helper: write a notes DF to MIDI and read back the raw MIDI events
+roundtrip_midi <- function(input_df,
+                           trackname = "Test",
+                           instrument = "Piano",
+                           channel = 1, bpm = 120,
+                           time_sig = c(4, 4), key_sig = c(0, FALSE),
+                           time_division = 480, smpte = NULL) {
+  tmpfile <- tempfile(fileext = ".mid")
+  on.exit(unlink(tmpfile))
+  writeMidiFile(tmpfile, input_df, trackname = trackname, instrument = instrument,
+                channel = channel, bpm = bpm, time_sig = time_sig,
+                key_sig = key_sig, time_division = time_division, smpte = smpte)
+  readMidi(tmpfile)
 }
 
 # --- Basic round-trip ---
@@ -145,4 +165,60 @@ test_that("large delta times encode and decode correctly", {
 
   expect_equal(result$time, 9600)
   expect_equal(result$length, 480)
+})
+
+# --- Round-trip tests for parameterized metadata ---
+
+simple_note <- data.frame(
+  pitch = 60, velocity = 100, tickStart = 0, tickEnd = 480
+)
+
+test_that("custom tempo (90 BPM) round-trips correctly", {
+  midi <- roundtrip_midi(simple_note, bpm = 90)
+  # Look for Set Tempo event
+  tempo_rows <- midi[midi$event == "Set Tempo", ]
+  expect_equal(nrow(tempo_rows), 1)
+  # 90 BPM = 666667 microseconds
+  expect_true(grepl("666667", tempo_rows$parameterMetaSystem[1]))
+})
+
+test_that("custom time signature (3/4) round-trips correctly", {
+  midi <- roundtrip_midi(simple_note, time_sig = c(3, 4))
+  ts_rows <- midi[midi$event == "Time Signature", ]
+  expect_equal(nrow(ts_rows), 1)
+})
+
+test_that("custom key signature (A minor) round-trips correctly", {
+  midi <- roundtrip_midi(simple_note, key_sig = c(0, TRUE))
+  ks_rows <- midi[midi$event == "Key Signature", ]
+  expect_equal(nrow(ks_rows), 1)
+})
+
+test_that("custom channel (5) round-trips correctly", {
+  result <- roundtrip_notes(simple_note, channel = 5)
+  expect_equal(nrow(result), 1)
+  # tuneR reports channels 0-indexed (0-15), our API uses 1-indexed (1-16)
+  expect_equal(result$channel, 4)
+})
+
+test_that("default smpte = NULL produces no SMPTE event", {
+  midi <- roundtrip_midi(simple_note, smpte = NULL)
+  smpte_rows <- midi[midi$event == "SMPTE Offset", ]
+  expect_equal(nrow(smpte_rows), 0)
+})
+
+test_that("notes still round-trip correctly with non-default metadata", {
+  pitches <- c(60, 64, 67)
+  input_df <- data.frame(
+    pitch = pitches,
+    velocity = c(80, 100, 120),
+    tickStart = c(0, 480, 960),
+    tickEnd = c(480, 960, 1440)
+  )
+  result <- roundtrip_notes(input_df, channel = 3, bpm = 90,
+                            time_sig = c(3, 4), key_sig = c(-1, FALSE))
+  expect_equal(nrow(result), 3)
+  expect_equal(result$note, pitches)
+  # tuneR reports channels 0-indexed
+  expect_equal(result$channel, rep(2, 3))
 })

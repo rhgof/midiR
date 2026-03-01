@@ -2,9 +2,10 @@
 test_that("Midi Channel", {
   # FF 20 01 cc MIDI Channel Prefix -------
   # cc = 0-15
-  expect_equal(bytesChannel(), as.raw(c(0xFF,0x20,0x01,0x00,0x00)))
-  expect_equal(bytesChannel(1), as.raw(c(0xFF,0x20,0x01,0x00,0x00)))
-  expect_equal(bytesChannel(16), as.raw(c(0xFF,0x20,0x01,0x0f,0x00)))
+  # FF 20 01 cc — no trailing delta time (handled by caller)
+  expect_equal(bytesChannel(), as.raw(c(0xFF,0x20,0x01,0x00)))
+  expect_equal(bytesChannel(1), as.raw(c(0xFF,0x20,0x01,0x00)))
+  expect_equal(bytesChannel(16), as.raw(c(0xFF,0x20,0x01,0x0f)))
 
 
   expect_warning(bytesChannel(17))

@@ -7,24 +7,27 @@
 #' Return bytes from a notes data frame constructing the track header, notes, end of track messages
 #' @export bytesMidiTrack
 
-bytesMidiTrack <- function(notesDF, trackname, instrument ) {
+bytesMidiTrack <- function(notesDF, trackname, instrument,
+                           channel = 1, bpm = 120,
+                           time_sig = c(4, 4), key_sig = c(0, FALSE),
+                           time_division = 480, smpte = NULL) {
 
   validateNotesDF(notesDF)
-  midiNotesDF <- toDeltaTime(notesDF)
+  midiNotesDF <- toDeltaTime(notesDF, channel = channel)
   trkNotes <- bytesMidiNotes(midiNotesDF)
 
   # all bytes in track chunk
   trkAll <- c(
-    midiTrkSetup(trackname, instrument),
+    midiTrkSetup(trackname, instrument, channel = channel, bpm = bpm,
+                 time_sig = time_sig, key_sig = key_sig, smpte = smpte),
     trkNotes,
-#    c(as.raw(0x81),as.raw(0x99),as.raw(0x60)),  # I do not know what this does
     midiTrkEnd()
   )
 
   # build the file and track header and set lengths
   midibytes <- c(
-    midiHeader(),
-    midiTrkHeader(trackLength=length(trkAll)),
+    midiHeader(time_division = time_division),
+    midiTrkHeader(trackLength = length(trkAll)),
     trkAll
   )
 
@@ -42,7 +45,7 @@ bytesMidiTrack <- function(notesDF, trackname, instrument ) {
 #' @import dplyr
 #' @importFrom rlang .data
 
-toDeltaTime <- function(midiNotesDF) {
+toDeltaTime <- function(midiNotesDF, channel = 1) {
   notesOn <- midiNotesDF %>%
     mutate(eventTick = .data$tickStart) %>%
     mutate(msg = "NoteOn")
@@ -52,16 +55,16 @@ toDeltaTime <- function(midiNotesDF) {
     mutate(velocity = 0) %>%  #decrease the velocity for midi-off
     mutate(msg = "NoteOff")
 
-  midiNotes <-bind_rows(notesOn,notesOff) %>%
-    select(-c(.data$tickStart,.data$tickEnd)) %>%
+  midiNotes <- bind_rows(notesOn, notesOff) %>%
+    select(-c(.data$tickStart, .data$tickEnd)) %>%
     arrange(.data$eventTick) %>%
+    mutate(deltaTime = .data$eventTick - dplyr::lag(.data$eventTick, default = 0))
 
-    mutate(deltaTime = .data$eventTick-dplyr::lag(.data$eventTick,default=0) )
-
-  # not the best way to do this but good for debugging to see what was assigned - see bytesMidiNotes() below
   midiNotes <- midiNotes %>%
     rowwise() %>%
-    mutate(midiRaw = list(bytesMidiNote(.data$pitch,.data$velocity,.data$deltaTime,.data$msg == "NoteOn")))
+    mutate(midiRaw = list(bytesMidiNote(.data$pitch, .data$velocity,
+                                        .data$deltaTime, .data$msg == "NoteOn",
+                                        channel = channel)))
 
   return(midiNotes)
 }

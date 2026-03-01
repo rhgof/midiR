@@ -16,7 +16,13 @@ INST_NAME = as.raw(0x04)
 #' \code{<Header Chunk> = <chunk type><length><format><ntrks><division>}
 #' These are NOT coded as var length integers
 
-midiHeader <- function() {
+midiHeader <- function(time_division = 480) {
+  if (!is.numeric(time_division) || length(time_division) != 1 ||
+      time_division != as.integer(time_division) ||
+      time_division < 1 || time_division > 32767) {
+    stop("time_division must be a positive integer up to 32767")
+  }
+
   bytes = raw(0)
   # Type
   bytes = c(bytes, bytesChar(MTHD))
@@ -32,9 +38,8 @@ midiHeader <- function() {
   trackCount = 1
   bytes = c(bytes, bytesShort(trackCount) )
 
-  # Division - Logic Default
-  timeDivision = 480
-  bytes = c(bytes, bytesShort(timeDivision) )
+  # Division
+  bytes = c(bytes, bytesShort(time_division) )
 
   return(bytes)
 }
@@ -51,29 +56,38 @@ midiTrkHeader <- function(trackLength=100) {
   return(bytes)
 }
 
-midiTrkSetup <- function(trackname="Test Track", instrument = "Instrument") {
+midiTrkSetup <- function(trackname = "Test Track", instrument = "Instrument",
+                         channel = 1, bpm = 120,
+                         time_sig = c(4, 4), key_sig = c(0, FALSE),
+                         smpte = NULL) {
   # Delta time before first event
   bytes = as.raw(0x00)
   # Channel
-  bytes = c(bytes, bytesChannel())
+  bytes = c(bytes, bytesChannel(channel))
+  bytes = c(bytes, as.raw(0x00))
 
-  # Track Name Name
-  bytes = c(bytes,bytesMetaMessage(TRK_NAME,trackname))
-  bytes = c(bytes,as.raw(0x00))
+  # Track Name
+  bytes = c(bytes, bytesMetaMessage(TRK_NAME, trackname))
+  bytes = c(bytes, as.raw(0x00))
 
   # Instrument Name
-  bytes = c(bytes,bytesMetaMessage(INST_NAME,instrument))
-  bytes = c(bytes,as.raw(0x00))
+  bytes = c(bytes, bytesMetaMessage(INST_NAME, instrument))
+  bytes = c(bytes, as.raw(0x00))
   # Time Signature
-  bytes = c(bytes,bytesTimeSig())
+  bytes = c(bytes, bytesTimeSig(time_sig[1], time_sig[2]))
+  bytes = c(bytes, as.raw(0x00))
   # Key Signature
-  bytes = c(bytes,bytesKeySig())
-  # SMPTE
-  bytes = c(bytes,bytesSMPTEOffset())
-  # tempo
-  bytes = c(bytes,bytesTempo())
+  bytes = c(bytes, bytesKeySig(key_sig[1], as.logical(key_sig[2])))
+  bytes = c(bytes, as.raw(0x00))
+  # SMPTE (optional)
+  if (!is.null(smpte)) {
+    bytes = c(bytes, bytesSMPTEOffset())
+    bytes = c(bytes, as.raw(0x00))
+  }
+  # Tempo
+  bytes = c(bytes, bytesTempo(bpm))
 
-  return (bytes)
+  return(bytes)
 }
 
 # Track End ------
@@ -148,17 +162,27 @@ bytesMidiNote <- function(pitch,velocity,deltaTime,on,channel = 1) {
 
 # ff 58 04 04  02 18 08 00
 
-bytesTimeSig <- function() {
-  T_QTR = as.raw(02) #2^-2
+bytesTimeSig <- function(numerator = 4, denominator = 4) {
+  if (!is.numeric(numerator) || length(numerator) != 1 ||
+      numerator != as.integer(numerator) || numerator < 1 || numerator > 32) {
+    stop("numerator must be an integer between 1 and 32")
+  }
+  valid_denoms = c(1, 2, 4, 8, 16, 32)
+  if (!is.numeric(denominator) || length(denominator) != 1 ||
+      !(denominator %in% valid_denoms)) {
+    stop("denominator must be a power of 2: 1, 2, 4, 8, 16, or 32")
+  }
+
+  denom_log2 = as.integer(log2(denominator))
+
   bytes = c(
     META_ESC,
     TIME_SIG,
     as.raw(0x04),
-    as.raw(0x04), # 4 notes
-    T_QTR,
+    as.raw(numerator),
+    as.raw(denom_log2),
     as.raw(0x18),
-    as.raw(0x08),
-    as.raw(0x00)
+    as.raw(0x08)
   )
 
   return(bytes)
@@ -175,14 +199,26 @@ bytesTimeSig <- function() {
 
 # ff 59 02 00 00 00 # C Major
 
-bytesKeySig <- function() {
+bytesKeySig <- function(sharps_flats = 0, minor = FALSE) {
+  if (!is.numeric(sharps_flats) || length(sharps_flats) != 1 ||
+      sharps_flats != as.integer(sharps_flats) ||
+      sharps_flats < -7 || sharps_flats > 7) {
+    stop("sharps_flats must be an integer between -7 and 7")
+  }
+  if (!is.logical(minor) || length(minor) != 1) {
+    stop("minor must be TRUE or FALSE")
+  }
+
+  # Two's complement for negative values: as.raw() on 256 + val
+  sf_byte = if (sharps_flats >= 0) as.raw(sharps_flats) else as.raw(256L + sharps_flats)
+  mi_byte = as.raw(as.integer(minor))
+
   bytes = c(
     META_ESC,
     KEY_SIG,
     as.raw(0x02),
-    as.raw(0x00), # key of C
-    as.raw(0x00), # major
-    as.raw(0x00)
+    sf_byte,
+    mi_byte
   )
   return(bytes)
 }
@@ -191,15 +227,26 @@ bytesKeySig <- function() {
 # (in microseconds per MIDI quarter-note)
 # ff 51 03 07 a1 20
 # Is 120bpm
-bytesTempo <- function() {
+bytesTempo <- function(bpm = 120) {
+  if (!is.numeric(bpm) || length(bpm) != 1 || bpm <= 0) {
+    stop("bpm must be a single positive number")
+  }
+  if (bpm < 20 || bpm > 300) {
+    warning("bpm ", bpm, " is outside typical range 20-300")
+  }
+
+  microseconds = round(60000000 / bpm)
+  byte1 = as.raw((microseconds %/% 65536) %% 256)
+  byte2 = as.raw((microseconds %/% 256) %% 256)
+  byte3 = as.raw(microseconds %% 256)
+
   bytes = c(
     META_ESC,
     TEMPO,
     as.raw(0x03),
-    as.raw(0x07),
-    as.raw(0xa1),
-    as.raw(0x20)
-    #    as.raw(0x00)
+    byte1,
+    byte2,
+    byte3
   )
   return(bytes)
 }
@@ -212,7 +259,6 @@ bytesSMPTEOffset <- function() {
     SMPTE,
     as.raw(0x05),
     as.raw(0x21),
-    as.raw(0x00),
     as.raw(0x00),
     as.raw(0x00),
     as.raw(0x00),
@@ -235,8 +281,7 @@ bytesChannel <- function(channel = 1) {
     META_ESC,
     CHANNEL,
     as.raw(0x01),
-    as.raw(channel),
-    as.raw(0x00)
+    as.raw(channel)
   )
   return(bytes)
 }
